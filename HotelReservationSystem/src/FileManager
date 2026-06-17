@@ -1,0 +1,164 @@
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * Handles all text-file persistence for rooms and bookings.
+ */
+public class FileManager {
+    private static final Path DATA_DIR = Paths.get("data");
+    private static final Path ROOMS_FILE = DATA_DIR.resolve("rooms.txt");
+    private static final Path BOOKINGS_FILE = DATA_DIR.resolve("bookings.txt");
+
+    public void initializeStorage() throws IOException {
+        Files.createDirectories(DATA_DIR);
+
+        if (!Files.exists(ROOMS_FILE) || Files.size(ROOMS_FILE) == 0) {
+            saveRooms(createSampleRooms());
+        }
+
+        if (!Files.exists(BOOKINGS_FILE) || Files.size(BOOKINGS_FILE) == 0) {
+            ArrayList<Room> rooms = loadRooms();
+            saveBookings(createSampleBookings(rooms));
+        }
+    }
+
+    public ArrayList<Room> loadRooms() throws IOException {
+        ArrayList<Room> rooms = new ArrayList<>();
+        if (!Files.exists(ROOMS_FILE)) {
+            return rooms;
+        }
+
+        List<String> lines = Files.readAllLines(ROOMS_FILE, StandardCharsets.UTF_8);
+        for (String line : lines) {
+            if (line.trim().isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            try {
+                rooms.add(Room.fromFileString(line));
+            } catch (InvalidDataException ex) {
+                System.err.println("Skipping bad room record: " + ex.getMessage());
+            }
+        }
+        Collections.sort(rooms, Comparator.comparingInt(Room::getRoomNumber));
+        return rooms;
+    }
+
+    public ArrayList<Booking> loadBookings(ArrayList<Room> rooms) throws IOException {
+        ArrayList<Booking> bookings = new ArrayList<>();
+        if (!Files.exists(BOOKINGS_FILE)) {
+            return bookings;
+        }
+
+        List<String> lines = Files.readAllLines(BOOKINGS_FILE, StandardCharsets.UTF_8);
+        for (String line : lines) {
+            if (line.trim().isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            try {
+                Room room = findRoomByNumber(rooms, extractRoomNumber(line));
+                bookings.add(Booking.fromFileString(line, room));
+            } catch (InvalidDataException ex) {
+                System.err.println("Skipping bad booking record: " + ex.getMessage());
+            }
+        }
+        Collections.sort(bookings, Comparator.comparing(Booking::getBookingId));
+        return bookings;
+    }
+
+    public void saveRooms(ArrayList<Room> rooms) throws IOException {
+        ArrayList<String> lines = new ArrayList<>();
+        lines.add("# roomNumber|category|active");
+        for (Room room : rooms) {
+            lines.add(room.toFileString());
+        }
+        Files.write(ROOMS_FILE, lines, StandardCharsets.UTF_8);
+    }
+
+    public void saveBookings(ArrayList<Booking> bookings) throws IOException {
+        ArrayList<String> lines = new ArrayList<>();
+        lines.add("# bookingId|customerId|name|phone|email|roomNumber|category|checkIn|checkOut|totalCost|paymentStatus|bookingStatus|createdAt");
+        for (Booking booking : bookings) {
+            lines.add(booking.toFileString());
+        }
+        Files.write(BOOKINGS_FILE, lines, StandardCharsets.UTF_8);
+    }
+
+    public String generateBookingId(ArrayList<Booking> bookings) {
+        int maxSequence = 0;
+        String today = LocalDate.now().toString().replace("-", "");
+        String prefix = "BK" + today + "-";
+
+        for (Booking booking : bookings) {
+            String id = booking.getBookingId();
+            if (id.startsWith(prefix)) {
+                try {
+                    int sequence = Integer.parseInt(id.substring(prefix.length()));
+                    maxSequence = Math.max(maxSequence, sequence);
+                } catch (NumberFormatException ignored) {
+                    // Ignore IDs that do not follow the generated sequence format.
+                }
+            }
+        }
+        return prefix + String.format("%04d", maxSequence + 1);
+    }
+
+    private ArrayList<Room> createSampleRooms() {
+        ArrayList<Room> rooms = new ArrayList<>();
+        rooms.add(new Room(101, RoomCategory.STANDARD, true));
+        rooms.add(new Room(102, RoomCategory.STANDARD, true));
+        rooms.add(new Room(201, RoomCategory.DELUXE, true));
+        rooms.add(new Room(202, RoomCategory.DELUXE, true));
+        rooms.add(new Room(301, RoomCategory.SUITE, true));
+        rooms.add(new Room(401, RoomCategory.FAMILY, true));
+        rooms.add(new Room(402, RoomCategory.FAMILY, true));
+        return rooms;
+    }
+
+    private ArrayList<Booking> createSampleBookings(ArrayList<Room> rooms) {
+        ArrayList<Booking> bookings = new ArrayList<>();
+        Room sampleRoom = findRoomByNumber(rooms, 201);
+        if (sampleRoom != null) {
+            Customer customer = new Customer("CUST-SAMPLE", "Aarav Sharma", "9876543210", "aarav@example.com");
+            bookings.add(new Booking(
+                    "BK-SAMPLE-1001",
+                    customer,
+                    sampleRoom,
+                    LocalDate.now().plusDays(1),
+                    LocalDate.now().plusDays(3),
+                    PaymentStatus.PAID,
+                    BookingStatus.ACTIVE,
+                    LocalDateTime.now()));
+        }
+        return bookings;
+    }
+
+    private Room findRoomByNumber(ArrayList<Room> rooms, int roomNumber) {
+        for (Room room : rooms) {
+            if (room.getRoomNumber() == roomNumber) {
+                return room;
+            }
+        }
+        return null;
+    }
+
+    private int extractRoomNumber(String bookingLine) throws InvalidDataException {
+        String[] parts = bookingLine.split("\\|");
+        if (parts.length < 6) {
+            throw new InvalidDataException("Booking record has no room number: " + bookingLine);
+        }
+        try {
+            return Integer.parseInt(parts[5]);
+        } catch (NumberFormatException ex) {
+            throw new InvalidDataException("Invalid booking room number: " + bookingLine, ex);
+        }
+    }
+}
