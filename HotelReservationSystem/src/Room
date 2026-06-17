@@ -1,0 +1,57 @@
+// Source code is decompiled from a .class file using FernFlower decompiler (from Intellij IDEA).
+public class Room {
+   private final int roomNumber;
+   private final RoomCategory category;
+   private boolean active;
+
+   public Room(int var1, RoomCategory var2, boolean var3) {
+      this.roomNumber = var1;
+      this.category = var2;
+      this.active = var3;
+   }
+
+   public int getRoomNumber() {
+      return this.roomNumber;
+   }
+
+   public RoomCategory getCategory() {
+      return this.category;
+   }
+
+   public double getPricePerNight() {
+      return this.category.getPricePerNight();
+   }
+
+   public boolean isActive() {
+      return this.active;
+   }
+
+   public void setActive(boolean var1) {
+      this.active = var1;
+   }
+
+   public String toFileString() {
+      int var10000 = this.roomNumber;
+      return var10000 + "|" + this.category.name() + "|" + this.active;
+   }
+
+   public static Room fromFileString(String var0) throws InvalidDataException {
+      String[] var1 = var0.split("\\|");
+      if (var1.length != 3) {
+         throw new InvalidDataException("Invalid room record: " + var0);
+      } else {
+         try {
+            int var2 = Integer.parseInt(var1[0]);
+            RoomCategory var3 = RoomCategory.valueOf(var1[1]);
+            boolean var4 = Boolean.parseBoolean(var1[2]);
+            return new Room(var2, var3, var4);
+         } catch (RuntimeException var5) {
+            throw new InvalidDataException("Unable to parse room record: " + var0, var5);
+         }
+      }
+   }
+
+   public String toString() {
+      return String.format("Room %d | %-8s | Rs. %.2f/night | %s", this.roomNumber, this.category, this.getPricePerNight(), this.active ? "Available for booking" : "Inactive");
+   }
+}
