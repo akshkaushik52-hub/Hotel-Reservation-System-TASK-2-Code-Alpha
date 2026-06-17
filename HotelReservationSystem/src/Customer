@@ -1,0 +1,50 @@
+import java.util.UUID;
+
+/**
+ * Stores the guest details attached to a booking.
+ */
+public class Customer {
+    private final String customerId;
+    private final String name;
+    private final String phone;
+    private final String email;
+
+    public Customer(String customerId, String name, String phone, String email) {
+        this.customerId = customerId;
+        this.name = clean(name);
+        this.phone = clean(phone);
+        this.email = clean(email);
+    }
+
+    public static Customer createNew(String name, String phone, String email) {
+        String id = "CUST-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return new Customer(id, name, phone, email);
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String toFileFragment() {
+        return customerId + "|" + name + "|" + phone + "|" + email;
+    }
+
+    private static String clean(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().replace("|", "/");
+    }
+}
