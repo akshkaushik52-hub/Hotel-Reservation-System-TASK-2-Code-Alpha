@@ -1,0 +1,45 @@
+import java.util.UUID;
+
+public class Customer {
+   private final String customerId;
+   private final String name;
+   private final String phone;
+   private final String email;
+
+   public Customer(String var1, String var2, String var3, String var4) {
+      this.customerId = var1;
+      this.name = clean(var2);
+      this.phone = clean(var3);
+      this.email = clean(var4);
+   }
+
+   public static Customer createNew(String var0, String var1, String var2) {
+      String var10000 = UUID.randomUUID().toString();
+      String var3 = "CUST-" + var10000.substring(0, 8).toUpperCase();
+      return new Customer(var3, var0, var1, var2);
+   }
+
+   public String getCustomerId() {
+      return this.customerId;
+   }
+
+   public String getName() {
+      return this.name;
+   }
+
+   public String getPhone() {
+      return this.phone;
+   }
+
+   public String getEmail() {
+      return this.email;
+   }
+
+   public String toFileFragment() {
+      return this.customerId + "|" + this.name + "|" + this.phone + "|" + this.email;
+   }
+
+   private static String clean(String var0) {
+      return var0 == null ? "" : var0.trim().replace("|", "/");
+   }
+}
