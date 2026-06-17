@@ -1,0 +1,12 @@
+/**
+ * Raised when a saved text-file record cannot be parsed.
+ */
+public class InvalidDataException extends Exception {
+    public InvalidDataException(String message) {
+        super(message);
+    }
+
+    public InvalidDataException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
