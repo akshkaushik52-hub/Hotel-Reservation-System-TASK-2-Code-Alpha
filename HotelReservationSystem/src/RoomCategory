@@ -1,0 +1,35 @@
+// Source code is decompiled from a .class file using FernFlower decompiler (from Intellij IDEA).
+public enum RoomCategory {
+   STANDARD((double)1000.0F),
+   DELUXE((double)1800.0F),
+   SUITE((double)3000.0F),
+   FAMILY((double)2500.0F);
+
+   private final double pricePerNight;
+
+   private RoomCategory(double var3) {
+      this.pricePerNight = var3;
+   }
+
+   public double getPricePerNight() {
+      return this.pricePerNight;
+   }
+
+   public static RoomCategory fromMenuChoice(int var0) {
+      switch (var0) {
+         case 1 -> {
+            return STANDARD;
+         }
+         case 2 -> {
+            return DELUXE;
+         }
+         case 3 -> {
+            return SUITE;
+         }
+         case 4 -> {
+            return FAMILY;
+         }
+         default -> throw new IllegalArgumentException("Invalid room category choice.");
+      }
+   }
+}
